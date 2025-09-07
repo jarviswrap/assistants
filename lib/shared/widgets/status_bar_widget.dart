@@ -4,7 +4,7 @@ import '../providers/repository_provider.dart';
 import '../providers/git_operations_provider.dart';
 
 class StatusBarWidget extends ConsumerWidget {
-  const StatusBarWidget({Key? key}) : super(key: key);
+  const StatusBarWidget({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

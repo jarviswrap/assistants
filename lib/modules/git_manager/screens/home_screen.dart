@@ -4,7 +4,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/repository_provider.dart';
 import '../widgets/repository_card.dart';
-import '../widgets/sidebar_navigation.dart';
+import '../../../shared/widgets/sidebar_navigation.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});

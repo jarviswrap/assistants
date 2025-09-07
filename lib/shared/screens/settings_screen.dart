@@ -178,10 +178,10 @@ class SettingsScreen extends ConsumerWidget {
             context,
             '关于',
             [
-              ListTile(
-                leading: const Icon(Icons.info),
-                title: const Text('版本'),
-                subtitle: const Text('1.0.0'),
+              const ListTile(
+                leading: Icon(Icons.info),
+                title: Text('版本'),
+                subtitle: Text('1.0.0'),
               ),
               ListTile(
                 leading: const Icon(Icons.code),

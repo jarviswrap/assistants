@@ -3,8 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/repository_provider.dart';
 import '../providers/git_operations_provider.dart';
-import '../providers/file_explorer_provider.dart';
-import '../widgets/sidebar_navigation.dart';
+import '../../../shared/widgets/sidebar_navigation.dart';
 import '../widgets/file_explorer.dart';
 import '../widgets/git_status_panel.dart';
 import '../widgets/commit_panel.dart';
@@ -75,7 +74,7 @@ class _RepositoryScreenState extends ConsumerState<RepositoryScreen> {
                   child: Row(
                     children: [
                       // 左侧文件浏览器
-                      SizedBox(
+                      const SizedBox(
                         width: 300,
                         child: FileExplorer(),
                       ),

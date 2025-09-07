@@ -7,9 +7,9 @@ class BranchSelector extends ConsumerWidget {
   final GitRepository repository;
   
   const BranchSelector({
-    Key? key,
+    super.key,
     required this.repository,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

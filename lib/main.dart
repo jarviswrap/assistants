@@ -10,14 +10,14 @@ void main() async {
   // 配置桌面窗口
   await windowManager.ensureInitialized();
   
-  WindowOptions windowOptions = const WindowOptions(
+  final WindowOptions windowOptions = const WindowOptions(
     size: Size(1200, 800),
     minimumSize: Size(800, 600),
     center: true,
     backgroundColor: Colors.transparent,
     skipTaskbar: false,
     titleBarStyle: TitleBarStyle.normal,
-    title: 'Git Manager',
+    title: 'Assistants',
   );
   
   windowManager.waitUntilReadyToShow(windowOptions, () async {
@@ -25,18 +25,18 @@ void main() async {
     await windowManager.focus();
   });
   
-  runApp(const ProviderScope(child: GitManagerApp()));
+  runApp(const ProviderScope(child: AssistantsApp()));
 }
 
-class GitManagerApp extends ConsumerWidget {
-  const GitManagerApp({super.key});
+class AssistantsApp extends ConsumerWidget {
+  const AssistantsApp({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(appRouterProvider);
     
     return MaterialApp.router(
-      title: 'Git Manager',
+      title: 'Assistants',
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: ThemeMode.system,

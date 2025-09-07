@@ -4,7 +4,7 @@ import '../models/git_models.dart';
 import '../providers/file_explorer_provider.dart';
 
 class FileTreeWidget extends ConsumerWidget {
-  const FileTreeWidget({Key? key}) : super(key: key);
+  const FileTreeWidget({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -40,11 +40,11 @@ class FileTreeItem extends StatelessWidget {
   final bool isSelected;
 
   const FileTreeItem({
-    Key? key,
+    super.key,
     required this.file,
     required this.onTap,
     required this.isSelected,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

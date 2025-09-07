@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../providers/repository_provider.dart';
+import '../../modules/git_manager/providers/repository_provider.dart';
 
 class SidebarNavigation extends ConsumerWidget {
-  const SidebarNavigation({Key? key}) : super(key: key);
+  const SidebarNavigation({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -94,7 +94,7 @@ class SidebarNavigation extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surfaceVariant,
+                color: Theme.of(context).colorScheme.surfaceContainerHighest,
                 border: Border(
                   top: BorderSide(
                     color: Theme.of(context).dividerColor,

@@ -4,7 +4,7 @@ import '../providers/git_operations_provider.dart';
 import '../providers/repository_provider.dart';
 
 class ToolbarWidget extends ConsumerWidget {
-  const ToolbarWidget({Key? key}) : super(key: key);
+  const ToolbarWidget({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

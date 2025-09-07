@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/git_models.dart';
-import '../core/themes/app_theme.dart';
 
 class RepositoryCard extends ConsumerWidget {
   final GitRepository repository;
@@ -10,12 +9,12 @@ class RepositoryCard extends ConsumerWidget {
   final VoidCallback onRemove;
 
   const RepositoryCard({
-    Key? key,
+    super.key,
     required this.repository,
     required this.isSelected,
     required this.onTap,
     required this.onRemove,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

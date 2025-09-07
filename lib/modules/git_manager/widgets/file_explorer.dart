@@ -5,7 +5,7 @@ import '../providers/file_explorer_provider.dart';
 import '../providers/repository_provider.dart';
 
 class FileExplorer extends ConsumerWidget {
-  const FileExplorer({Key? key}) : super(key: key);
+  const FileExplorer({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -34,7 +34,7 @@ class FileExplorer extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surfaceVariant,
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
               border: Border(
                 bottom: BorderSide(
                   color: Theme.of(context).dividerColor,

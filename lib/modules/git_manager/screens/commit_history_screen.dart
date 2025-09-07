@@ -3,9 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/repository_provider.dart';
 import '../providers/git_operations_provider.dart';
-import '../widgets/sidebar_navigation.dart';
+import '../../../shared/widgets/sidebar_navigation.dart';
 import '../widgets/commit_list_item.dart';
-import '../core/themes/app_theme.dart';
 
 class CommitHistoryScreen extends ConsumerWidget {
   const CommitHistoryScreen({super.key});
@@ -196,7 +195,7 @@ class CommitHistoryScreen extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('提交详情'),
+        title: const Text('提交详情'),
         content: SizedBox(
           width: 500,
           child: Column(
@@ -218,7 +217,7 @@ class CommitHistoryScreen extends ConsumerWidget {
                 width: double.infinity,
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surfaceVariant,
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(

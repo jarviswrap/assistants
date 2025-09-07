@@ -4,7 +4,7 @@ import '../models/git_models.dart';
 import '../providers/git_operations_provider.dart';
 
 class CommitHistoryWidget extends ConsumerWidget {
-  const CommitHistoryWidget({Key? key}) : super(key: key);
+  const CommitHistoryWidget({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -38,10 +38,10 @@ class CommitItem extends StatelessWidget {
   final VoidCallback onTap;
 
   const CommitItem({
-    Key? key,
+    super.key,
     required this.commit,
     required this.onTap,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

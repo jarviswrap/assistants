@@ -1,5 +1,5 @@
-name: git_manager
-description: A Flutter desktop application for Git repository management
+name: assistants
+description: A comprehensive Flutter desktop application suite with multiple assistant tools
 version: 1.0.0+1
 
 environment:

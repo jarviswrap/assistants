@@ -4,7 +4,7 @@ import '../providers/git_operations_provider.dart';
 import '../models/git_models.dart';
 
 class GitStatusPanel extends ConsumerWidget {
-  const GitStatusPanel({Key? key}) : super(key: key);
+  const GitStatusPanel({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

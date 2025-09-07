@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/git_operations_provider.dart';
 
 class CommitPanel extends ConsumerStatefulWidget {
-  const CommitPanel({Key? key}) : super(key: key);
+  const CommitPanel({super.key});
 
   @override
   ConsumerState<CommitPanel> createState() => _CommitPanelState();

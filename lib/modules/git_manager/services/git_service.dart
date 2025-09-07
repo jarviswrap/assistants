@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'package:path/path.dart' as path;
-import 'package:process_run/process_run.dart';
 import '../models/git_models.dart';
 
 class GitService {

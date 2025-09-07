@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../utils/constants.dart';
+import '../../shared/utils/constants.dart';
 
 class AppTheme {
   static const Color _primaryColor = Color(AppConstants.primaryColorValue);

@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../services/file_service.dart';
+import '../../../shared/services/file_service.dart';
 import 'repository_provider.dart';
 
 class FileExplorerState {

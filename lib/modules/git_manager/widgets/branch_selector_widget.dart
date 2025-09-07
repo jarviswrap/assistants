@@ -4,7 +4,7 @@ import '../models/git_models.dart';
 import '../providers/git_operations_provider.dart';
 
 class BranchSelectorWidget extends ConsumerWidget {
-  const BranchSelectorWidget({Key? key}) : super(key: key);
+  const BranchSelectorWidget({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
