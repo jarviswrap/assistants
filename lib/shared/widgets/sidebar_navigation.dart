@@ -150,33 +150,50 @@ class SidebarNavigation extends ConsumerWidget {
       margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       child: Tooltip(
         message: isExpanded ? '' : title,
-        child: ListTile(
-          leading: Icon(
-            icon,
-            color: isSelected
-                ? Theme.of(context).primaryColor
-                : Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
-          title: isExpanded ? Text(
-            title,
-            style: TextStyle(
-              color: isSelected
-                  ? Theme.of(context).primaryColor
-                  : Theme.of(context).colorScheme.onSurface,
-              fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-            ),
-          ) : null,
-          selected: isSelected,
-          selectedTileColor: Theme.of(context).primaryColor.withOpacity(0.1),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
-          contentPadding: isExpanded 
-              ? const EdgeInsets.symmetric(horizontal: 16)
-              : const EdgeInsets.symmetric(horizontal: 24),
+        child: InkWell(
           onTap: () => context.go(route),
+          borderRadius: BorderRadius.circular(8),
+          child: Container(
+            height: 48,
+            padding: EdgeInsets.symmetric(
+              horizontal: isExpanded ? 16 : 12,
+              vertical: 12,
+            ),
+            decoration: BoxDecoration(
+              color: isSelected ? Theme.of(context).primaryColor.withOpacity(0.1) : null,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: isExpanded
+                ? Row(
+                    children: [
+                      Icon(
+                        icon,
+                        size: 20,
+                        color: isSelected ? Theme.of(context).primaryColor : null,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          title,
+                          style: TextStyle(
+                            color: isSelected ? Theme.of(context).primaryColor : null,
+                            fontWeight: isSelected ? FontWeight.w500 : FontWeight.normal,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  )
+                : Center(
+                    child: Icon(
+                      icon,
+                      size: 20,
+                      color: isSelected ? Theme.of(context).primaryColor : null,
+                    ),
+                  ),
         ),
       ),
+    )
     );
   }
 
