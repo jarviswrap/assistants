@@ -9,15 +9,15 @@ class Addr2LineService {
   Addr2LineService._internal();
 
   String? _androidSdkPath;
-  String? _symbolFilePath;
+  List<String> _symbolFilePaths = [];
   
   static const String _sdkPathKey = 'android_sdk_path';
-  static const String _symbolFilePathKey = 'symbol_file_path';
+  static const String _symbolFilePathsKey = 'symbol_file_paths';
 
   Future<void> initialize() async {
     final prefs = await SharedPreferences.getInstance();
     _androidSdkPath = prefs.getString(_sdkPathKey);
-    _symbolFilePath = prefs.getString(_symbolFilePathKey);
+    _symbolFilePaths = prefs.getStringList(_symbolFilePathsKey) ?? [];
   }
 
   Future<void> dispose() async {
@@ -31,18 +31,37 @@ class Addr2LineService {
     await prefs.setString(_sdkPathKey, path);
   }
 
-  /// 设置符号文件路径
-  Future<void> setSymbolFilePath(String path) async {
-    _symbolFilePath = path;
+  /// 添加符号文件路径
+  Future<void> addSymbolFilePath(String path) async {
+    if (!_symbolFilePaths.contains(path)) {
+      _symbolFilePaths.add(path);
+      await _saveSymbolFilePaths();
+    }
+  }
+
+  /// 移除符号文件路径
+  Future<void> removeSymbolFilePath(String path) async {
+    _symbolFilePaths.remove(path);
+    await _saveSymbolFilePaths();
+  }
+
+  /// 清空所有符号文件路径
+  Future<void> clearSymbolFilePaths() async {
+    _symbolFilePaths.clear();
+    await _saveSymbolFilePaths();
+  }
+
+  /// 保存符号文件路径列表
+  Future<void> _saveSymbolFilePaths() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_symbolFilePathKey, path);
+    await prefs.setStringList(_symbolFilePathsKey, _symbolFilePaths);
   }
 
   /// 获取当前配置的SDK路径
   String? get androidSdkPath => _androidSdkPath;
 
-  /// 获取当前配置的符号文件路径
-  String? get symbolFilePath => _symbolFilePath;
+  /// 获取当前配置的符号文件路径列表
+  List<String> get symbolFilePaths => List.unmodifiable(_symbolFilePaths);
 
   /// 检测地址是32位还是64位
   bool _is64BitAddress(String address) {
@@ -97,8 +116,8 @@ class Addr2LineService {
 
   /// 符号化单个地址
   Future<String?> symbolizeAddress(String address) async {
-    if (_symbolFilePath == null || !File(_symbolFilePath!).existsSync()) {
-      throw Exception('符号文件路径未设置或文件不存在');
+    if (_symbolFilePaths.isEmpty) {
+      throw Exception('符号文件路径未设置');
     }
 
     final is64Bit = _is64BitAddress(address);
@@ -108,31 +127,39 @@ class Addr2LineService {
       throw Exception('未找到对应架构的addr2line工具');
     }
 
-    try {
-      final result = await Process.run(
-        addr2linePath,
-        ['-e', _symbolFilePath!, '-f', '-C', address],
-        stdoutEncoding: utf8,
-        stderrEncoding: utf8,
-      );
-
-      if (result.exitCode == 0) {
-        final output = result.stdout.toString().trim();
-        final lines = output.split('\n');
-        if (lines.length >= 2) {
-          final functionName = lines[0];
-          final location = lines[1];
-          return '$functionName at $location';
-        }
-        return output;
-      } else {
-        debugPrint('addr2line error: ${result.stderr}');
-        return null;
+    // 尝试每个符号文件，直到找到有效的符号化结果
+    for (final symbolFilePath in _symbolFilePaths) {
+      if (!File(symbolFilePath).existsSync()) {
+        continue;
       }
-    } catch (e) {
-      debugPrint('执行addr2line时出错: $e');
-      return null;
+
+      try {
+        final result = await Process.run(
+          addr2linePath,
+          ['-e', symbolFilePath, '-f', '-C', address],
+          stdoutEncoding: utf8,
+          stderrEncoding: utf8,
+        );
+
+        if (result.exitCode == 0) {
+          final output = result.stdout.toString().trim();
+          final lines = output.split('\n');
+          if (lines.length >= 2) {
+            final functionName = lines[0];
+            final location = lines[1];
+            // 检查是否是有效的符号化结果（不是??:0这样的无效结果）
+            if (!functionName.startsWith('??') && !location.contains('??:0')) {
+              return '$functionName at $location (${symbolFilePath.split('/').last})';
+            }
+          }
+        }
+      } catch (e) {
+        debugPrint('使用符号文件 $symbolFilePath 时出错: $e');
+        continue;
+      }
     }
+
+    return null;
   }
 
   /// 符号化整个堆栈
@@ -182,7 +209,7 @@ class Addr2LineService {
 
   /// 验证配置是否有效
   Future<bool> validateConfiguration() async {
-    if (_androidSdkPath == null || _symbolFilePath == null) {
+    if (_androidSdkPath == null || _symbolFilePaths.isEmpty) {
       return false;
     }
 
@@ -191,8 +218,16 @@ class Addr2LineService {
       return false;
     }
 
-    // 检查符号文件
-    if (!File(_symbolFilePath!).existsSync()) {
+    // 检查至少有一个有效的符号文件
+    bool hasValidSymbolFile = false;
+    for (final path in _symbolFilePaths) {
+      if (File(path).existsSync()) {
+        hasValidSymbolFile = true;
+        break;
+      }
+    }
+    
+    if (!hasValidSymbolFile) {
       return false;
     }
 
