@@ -19,10 +19,6 @@ analyzer:
     - "build/**"
     - ".dart_tool/**"
   
-  # 启用实验性功能
-  enable-experiment:
-    - non-nullable
-  
   # 错误处理配置
   errors:
     # 将某些警告提升为错误

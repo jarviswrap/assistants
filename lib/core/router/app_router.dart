@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../modules/git_manager/screens/home_screen.dart';
+import '../../shared/screens/home_screen.dart';
 import '../../modules/git_manager/screens/repository_screen.dart';
 import '../../modules/git_manager/screens/commit_history_screen.dart';
 import '../../shared/screens/settings_screen.dart';
