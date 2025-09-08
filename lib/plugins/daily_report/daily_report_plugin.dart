@@ -14,6 +14,7 @@ class DailyReportPlugin extends BasePlugin {
     description: '日常工作报告管理工具',
     version: '1.0.0',
     icon: Icons.assignment,
+    enabled: true,  // 添加这行
   );
 
   @override
@@ -29,11 +30,11 @@ class DailyReportPlugin extends BasePlugin {
       builder: (context, state) => const DailyReportHomeScreen(),
       routes: [
         GoRoute(
-          path: '/editor',
+          path: 'editor',
           builder: (context, state) => const ReportEditorScreen(),
         ),
         GoRoute(
-          path: '/history',
+          path: 'history',
           builder: (context, state) => const ReportHistoryScreen(),
         ),
       ],

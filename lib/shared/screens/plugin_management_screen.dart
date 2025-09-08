@@ -2,46 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/plugins/plugin_manager.dart';
 import '../../core/plugins/plugin_interface.dart';
-import '../widgets/sidebar_navigation.dart';
 
-class PluginManagementScreen extends ConsumerWidget {
-  const PluginManagementScreen({super.key});
+// 新增：插件管理内容组件
+class PluginManagementContent extends ConsumerWidget {
+  const PluginManagementContent({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final pluginManager = ref.watch(pluginManagerProvider);
     final plugins = pluginManager.getAllPlugins();
 
-    return Scaffold(
-      body: Row(
-        children: [
-          const SidebarNavigation(),
-          Expanded(
-            child: Container(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(Icons.extension, size: 32, color: Theme.of(context).primaryColor),
-                      const SizedBox(width: 12),
-                      Text(
-                        '插件管理',
-                        style: Theme.of(context).textTheme.headlineMedium,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-                  Expanded(
-                    child: _buildPluginList(context, ref, plugins),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
+    return Container(
+      padding: const EdgeInsets.all(24),
+      child: _buildPluginList(context, ref, plugins),
     );
   }
 

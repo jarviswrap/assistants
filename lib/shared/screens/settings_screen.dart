@@ -1,35 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../widgets/sidebar_navigation.dart';
+import '../layouts/main_layout.dart';
 
-class SettingsScreen extends ConsumerWidget {
-  const SettingsScreen({super.key});
+// 新增：设置内容组件
+class SettingsContent extends ConsumerWidget {
+  const SettingsContent({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Scaffold(
-      body: Row(
-        children: [
-          // 侧边栏导航
-          const SidebarNavigation(),
-          
-          // 主内容区域
-          Expanded(
-            child: Column(
-              children: [
-                // 顶部工具栏
-                _buildTopBar(context),
-                
-                // 设置内容
-                Expanded(
-                  child: _buildSettingsContent(context),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
+    return _buildSettingsContent(context);
   }
 
   Widget _buildTopBar(BuildContext context) {

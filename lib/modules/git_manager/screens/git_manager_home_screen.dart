@@ -4,7 +4,6 @@ import 'package:file_picker/file_picker.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/repository_provider.dart';
 import '../widgets/repository_card.dart';
-import '../../../shared/widgets/sidebar_navigation.dart';
 
 class GitManagerHomeScreen extends ConsumerWidget {
   const GitManagerHomeScreen({super.key});
@@ -13,28 +12,16 @@ class GitManagerHomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final repositoryState = ref.watch(repositoryProvider);
 
-    return Scaffold(
-      body: Row(
-        children: [
-          // 侧边栏导航
-          const SidebarNavigation(),
-          
-          // 主内容区域
-          Expanded(
-            child: Column(
-              children: [
-                // 顶部工具栏
-                _buildTopBar(context, ref),
-                
-                // 仓库列表
-                Expanded(
-                  child: _buildRepositoryList(context, repositoryState, ref),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+    return Column(
+      children: [
+        // 顶部工具栏
+        _buildTopBar(context, ref),
+        
+        // 仓库列表
+        Expanded(
+          child: _buildRepositoryList(context, repositoryState, ref),
+        ),
+      ],
     );
   }
 

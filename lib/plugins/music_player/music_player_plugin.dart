@@ -14,6 +14,7 @@ class MusicPlayerPlugin extends BasePlugin {
     description: '本地音乐播放和管理工具',
     version: '1.0.0',
     icon: Icons.music_note,
+    enabled: true,  // 添加这行
   );
 
   @override
@@ -29,13 +30,13 @@ class MusicPlayerPlugin extends BasePlugin {
       builder: (context, state) => const MusicPlayerHomeScreen(),
       routes: [
         GoRoute(
-          path: '/playlist/:playlistId',
+          path: 'playlist/:playlistId',
           builder: (context, state) => PlaylistScreen(
             playlistId: state.pathParameters['playlistId'] ?? '',
           ),
         ),
         GoRoute(
-          path: '/now-playing',
+          path: 'now-playing',
           builder: (context, state) => const NowPlayingScreen(),
         ),
       ],

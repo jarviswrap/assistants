@@ -1,28 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../shared/widgets/sidebar_navigation.dart';
 
 class DailyReportHomeScreen extends ConsumerWidget {
   const DailyReportHomeScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Scaffold(
-      body: Row(
-        children: [
-          const SidebarNavigation(),
-          Expanded(
-            child: Column(
-              children: [
-                _buildTopBar(context),
-                Expanded(
-                  child: _buildContent(context),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+    return Column(
+      children: [
+        _buildTopBar(context),
+        Expanded(
+          child: _buildContent(context),
+        ),
+      ],
     );
   }
 

@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/repository_provider.dart';
 import '../providers/git_operations_provider.dart';
-import '../../../shared/widgets/sidebar_navigation.dart';
 import '../widgets/file_explorer.dart';
 import '../widgets/git_status_panel.dart';
 import '../widgets/commit_panel.dart';
@@ -34,66 +33,52 @@ class _RepositoryScreenState extends ConsumerState<RepositoryScreen> {
     final currentRepo = repositoryState.currentRepository;
 
     if (currentRepo == null) {
-      return Scaffold(
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(
-                Icons.folder_outlined,
-                size: 64,
-              ),
-              const SizedBox(height: 16),
-              const Text('请先选择一个仓库'),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () => context.go('/'),
-                child: const Text('返回首页'),
-              ),
-            ],
-          ),
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.folder_outlined,
+              size: 64,
+            ),
+            const SizedBox(height: 16),
+            const Text('请先选择一个仓库'),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () => context.go('/'),
+              child: const Text('返回首页'),
+            ),
+          ],
         ),
       );
     }
 
-    return Scaffold(
-      body: Row(
-        children: [
-          // 侧边栏导航
-          const SidebarNavigation(),
-          
-          // 主内容区域
-          Expanded(
-            child: Column(
-              children: [
-                // 顶部工具栏
-                _buildTopBar(context, currentRepo),
-                
-                // 主要内容区域
-                Expanded(
-                  child: Row(
-                    children: [
-                      // 左侧文件浏览器
-                      const SizedBox(
-                        width: 300,
-                        child: FileExplorer(),
-                      ),
-                      
-                      // 分隔线
-                      const VerticalDivider(width: 1),
-                      
-                      // 右侧内容区域
-                      Expanded(
-                        child: _buildMainContent(),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+    return Column(
+      children: [
+        // 顶部工具栏
+        _buildTopBar(context, currentRepo),
+        
+        // 主要内容区域
+        Expanded(
+          child: Row(
+            children: [
+              // 左侧文件浏览器
+              const SizedBox(
+                width: 300,
+                child: FileExplorer(),
+              ),
+              
+              // 分隔线
+              const VerticalDivider(width: 1),
+              
+              // 右侧内容区域
+              Expanded(
+                child: _buildMainContent(),
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 

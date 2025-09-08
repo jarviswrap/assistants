@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/repository_provider.dart';
 import '../providers/git_operations_provider.dart';
-import '../../../shared/widgets/sidebar_navigation.dart';
 import '../widgets/commit_list_item.dart';
 
 class CommitHistoryScreen extends ConsumerWidget {
@@ -16,50 +15,36 @@ class CommitHistoryScreen extends ConsumerWidget {
     final currentRepo = repositoryState.currentRepository;
 
     if (currentRepo == null) {
-      return Scaffold(
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(
-                Icons.folder_outlined,
-                size: 64,
-              ),
-              const SizedBox(height: 16),
-              const Text('请先选择一个仓库'),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () => context.go('/'),
-                child: const Text('返回首页'),
-              ),
-            ],
-          ),
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.folder_outlined,
+              size: 64,
+            ),
+            const SizedBox(height: 16),
+            const Text('请先选择一个仓库'),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () => context.go('/'),
+              child: const Text('返回首页'),
+            ),
+          ],
         ),
       );
     }
 
-    return Scaffold(
-      body: Row(
-        children: [
-          // 侧边栏导航
-          const SidebarNavigation(),
-          
-          // 主内容区域
-          Expanded(
-            child: Column(
-              children: [
-                // 顶部工具栏
-                _buildTopBar(context, currentRepo, ref),
-                
-                // 提交历史列表
-                Expanded(
-                  child: _buildCommitHistory(context, gitOperationsState, ref),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+    return Column(
+      children: [
+        // 顶部工具栏
+        _buildTopBar(context, currentRepo, ref),
+        
+        // 提交历史列表
+        Expanded(
+          child: _buildCommitHistory(context, gitOperationsState, ref),
+        ),
+      ],
     );
   }
 

@@ -13,6 +13,7 @@ class GitManagerPlugin extends BasePlugin {
     version: '1.0.0',
     icon: Icons.source,
     category: 'development',
+    enabled: true,  // 添加这行
   );
 
   @override

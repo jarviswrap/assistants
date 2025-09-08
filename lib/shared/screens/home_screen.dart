@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../widgets/sidebar_navigation.dart';
+import '../layouts/main_layout.dart';
 import '../../core/plugins/plugin_manager.dart';
 
 class HomeScreen extends ConsumerWidget {
@@ -10,70 +10,33 @@ class HomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final pluginManager = ref.watch(pluginManagerProvider);
     
-    return Scaffold(
-      body: Row(
-        children: [
-          // 侧边栏导航
-          const SidebarNavigation(),
-          
-          // 主内容区域
-          Expanded(
-            child: Column(
-              children: [
-                // 顶部工具栏
-                _buildTopBar(context),
-                
-                // 主要内容
-                Expanded(
-                  child: _buildMainContent(context, pluginManager),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+    return MainLayout(
+      title: '助手工作台',
+      actions: [
+        IconButton(
+          onPressed: () {},
+          icon: const Icon(Icons.notifications_outlined),
+          tooltip: '通知',
+        ),
+        IconButton(
+          onPressed: () {},
+          icon: const Icon(Icons.search),
+          tooltip: '搜索',
+        ),
+      ],
+      child: HomeContent(),
     );
   }
+}
 
-  Widget _buildTopBar(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        border: Border(
-          bottom: BorderSide(
-            color: Theme.of(context).dividerColor,
-            width: 1,
-          ),
-        ),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            Icons.dashboard,
-            color: Theme.of(context).colorScheme.primary,
-          ),
-          const SizedBox(width: 8),
-          Text(
-            '助手工作台',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const Spacer(),
-          IconButton(
-            onPressed: () {},
-            icon: const Icon(Icons.notifications_outlined),
-            tooltip: '通知',
-          ),
-          IconButton(
-            onPressed: () {},
-            icon: const Icon(Icons.search),
-            tooltip: '搜索',
-          ),
-        ],
-      ),
-    );
+// 新增：主内容组件
+class HomeContent extends ConsumerWidget {
+  const HomeContent({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final pluginManager = ref.watch(pluginManagerProvider);
+    return _buildMainContent(context, pluginManager);
   }
 
   Widget _buildMainContent(BuildContext context, PluginManager pluginManager) {
