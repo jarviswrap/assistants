@@ -27,11 +27,13 @@ class ClickAction {
 class _CrashAnalyzerScreenState extends State<CrashAnalyzerScreen> {
   final _stackTraceController = TextEditingController();
   final _sdkPathController = TextEditingController();
+  final _symbolDirectoryController = TextEditingController();  // 新增符号目录控制器
   
   List<SymbolizedFrame> _symbolizedFrames = [];
   bool _isAnalyzing = false;
   String? _errorMessage;
-  List<String> _symbolFilePaths = []; // 添加符号文件路径列表
+  List<String> _symbolFilePaths = [];
+  List<String> _foundSoFiles = [];  // 自动找到的.so文件列表
 
   @override
   void initState() {
@@ -43,49 +45,79 @@ class _CrashAnalyzerScreenState extends State<CrashAnalyzerScreen> {
     final service = Addr2LineService.instance;
     setState(() {
       _sdkPathController.text = service.androidSdkPath ?? '';
-      _symbolFilePaths = List.from(service.symbolFilePaths); // 加载所有符号文件
+      _symbolDirectoryController.text = service.symbolDirectoryPath ?? '';  // 添加这行
+      _symbolFilePaths = List.from(service.symbolSoFiles); // 加载所有符号文件
     });
   }
 
   Future<void> _selectSdkPath() async {
+    print('调试信息: _selectSdkPath 方法被调用');
+    
     final result = await FilePicker.platform.getDirectoryPath(
       dialogTitle: '选择Android SDK路径',
+      lockParentWindow: true,
     );
     
     if (result != null) {
+      print('调试信息: 用户选择了SDK路径: $result');
       setState(() {
         _sdkPathController.text = result;
       });
       await Addr2LineService.instance.setAndroidSdkPath(result);
+      print('调试信息: SDK路径已保存到服务');
+    } else {
+      print('调试信息: 用户取消了SDK路径选择');
     }
   }
 
-  Future<void> _selectSymbolFile() async {
-    final result = await FilePicker.platform.pickFiles(
-      dialogTitle: '选择符号文件(.so)',
-      type: FileType.custom,
-      allowedExtensions: ['so'],
-      allowMultiple: true, // 允许选择多个文件
-    );
+  /// 选择符号目录
+  Future<void> _selectSymbolDirectory() async {
+    print('调试信息: _selectSymbolDirectory 方法被调用');
     
-    if (result != null && result.files.isNotEmpty) {
-      for (final file in result.files) {
-        if (file.path != null) {
-          await Addr2LineService.instance.addSymbolFilePath(file.path!);
-        }
+    final result = await FilePicker.platform.getDirectoryPath(
+      dialogTitle: '选择符号文件(.so)所在目录',
+      lockParentWindow: true,
+    );
+
+    if (result != null) {
+      print('调试信息: 用户选择了符号目录: $result');
+      setState(() {
+        _symbolDirectoryController.text = result;
+      });
+      await Addr2LineService.instance.setSymbolDirectoryPath(result);
+      print('调试信息: 符号目录已保存到服务');
+      
+      // 如果已有堆栈内容，立即触发自动查找
+      if (_stackTraceController.text.trim().isNotEmpty) {
+        await _autoFindSymbolFiles();
       }
-      await _loadConfiguration(); // 重新加载配置
+    } else {
+      print('调试信息: 用户取消了符号目录选择');
     }
   }
 
-  Future<void> _removeSymbolFile(String path) async {
-    await Addr2LineService.instance.removeSymbolFilePath(path);
-    await _loadConfiguration();
-  }
-
-  Future<void> _clearAllSymbolFiles() async {
-    await Addr2LineService.instance.clearSymbolFilePaths();
-    await _loadConfiguration();
+  /// 自动查找符号文件
+  Future<void> _autoFindSymbolFiles() async {
+    if (_stackTraceController.text.trim().isEmpty) return;
+    
+    try {
+      final foundFiles = await Addr2LineService.instance.autoFindSymbolFiles(_stackTraceController.text);
+      setState(() {
+        _foundSoFiles = foundFiles;
+        _symbolFilePaths = foundFiles;
+      });
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('自动找到 ${foundFiles.length} 个符号文件'),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      print('自动查找符号文件时出错: $e');
+    }
   }
 
   Future<void> _analyzeStack() async {
@@ -95,6 +127,9 @@ class _CrashAnalyzerScreenState extends State<CrashAnalyzerScreen> {
       });
       return;
     }
+
+    // 先自动查找符号文件
+    await _autoFindSymbolFiles();
 
     setState(() {
       _isAnalyzing = true;
@@ -108,7 +143,7 @@ class _CrashAnalyzerScreenState extends State<CrashAnalyzerScreen> {
       // 验证配置
       final isValid = await service.validateConfiguration();
       if (!isValid) {
-        throw Exception('配置无效：请检查Android SDK路径和符号文件路径');
+        throw Exception('配置无效：请检查Android SDK路径和符号目录路径');
       }
 
       final frames = await service.symbolizeStack(_stackTraceController.text);
@@ -186,35 +221,71 @@ class _CrashAnalyzerScreenState extends State<CrashAnalyzerScreen> {
                     items: _sdkPathController.text.isEmpty ? [] : [_sdkPathController.text],
                     emptyMessage: '未选择Android SDK路径',
                     icon: Icons.folder,
-                    onRemoveItem: (item) {
-                      _sdkPathController.clear();
-                      setState(() {});
-                    },
                     onItemTap: (item) {
                       _selectSdkPath();
                     },
                   ),
                   const SizedBox(height: 12),
+                  // 添加符号目录显示
                   _buildListView(
                     context: context, 
-                    items: _symbolFilePaths,
-                    emptyMessage: '未选择符号文件',
-                    // title: '符号文件选择',
-                    icon: Icons.insert_drive_file,
-                    // primaryAction: ClickAction(
-                    //   label: '添加',
-                    //   icon: Icons.add,
-                    //   onPressed: _selectSymbolFile,
-                    // ),
-                    // secondAction: _symbolFilePaths.isNotEmpty ? ClickAction(
-                    //   label: '清空',
-                    //   onPressed: _clearAllSymbolFiles,
-                    //   isOutlined: true,
-                    // ) : null,
-                    onRemoveItem: _removeSymbolFile,
+                    items: _symbolDirectoryController.text.isEmpty ? [] : [_symbolDirectoryController.text],
+                    emptyMessage: '未选择符号目录',
+                    icon: Icons.folder_open,
                     onItemTap: (item) {
-                      _selectSymbolFile();
+                      _selectSymbolDirectory();
                     },
+                  ),
+                  Row(
+                    children: [
+                      // 左边的"+"文本
+                      const Text(
+                        '+',
+                        style: TextStyle(fontSize: 16),
+                      ),
+                      const SizedBox(width: 4),
+                      // 右边的符号文件列表
+                      Expanded(
+                        child: _buildListView(
+                          context: context, 
+                          items: _symbolFilePaths.map((filePath) {
+                            // 获取符号目录路径
+                            final symbolDir = _symbolDirectoryController.text;
+                            if (symbolDir.isNotEmpty && filePath.startsWith(symbolDir)) {
+                              // 去掉符号目录前缀，显示相对路径
+                              String relativePath = filePath.substring(symbolDir.length);
+                              // 去掉开头的路径分隔符
+                              if (relativePath.startsWith('/')) {
+                                relativePath = relativePath.substring(1);
+                              }
+                              return relativePath;
+                            }
+                            // 如果不在符号目录下，显示完整路径
+                            return filePath;
+                          }).toList(),
+                          emptyMessage: '粘贴Android native crash堆栈后，自动搜索符号目录下的符号文件',
+                          icon: Icons.insert_drive_file,
+                          onRemoveItem: (item) {
+                            // 获取符号目录路径
+                            final symbolDir = _symbolDirectoryController.text;
+                            String fullPath = item;
+                            
+                            // 如果显示的是相对路径，需要还原为完整路径
+                            if (symbolDir.isNotEmpty && !item.startsWith('/')) {
+                              fullPath = '$symbolDir/$item';
+                            }
+                            
+                            // 从service中删除符号文件
+                            Addr2LineService.instance.removeSymbolFile(fullPath);
+                            
+                            setState(() {
+                              // 从UI列表中移除
+                              _symbolFilePaths.remove(fullPath);
+                            });
+                          },
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -251,6 +322,17 @@ class _CrashAnalyzerScreenState extends State<CrashAnalyzerScreen> {
                     maxLines: null,
                     expands: true,
                     textAlignVertical: TextAlignVertical.top,
+                    onChanged: (text) {
+                      // 当堆栈内容改变时，如果已选择符号目录，自动查找符号文件
+                      if (text.trim().isNotEmpty && _symbolDirectoryController.text.isNotEmpty) {
+                        // 延迟执行，避免频繁触发
+                        Future.delayed(const Duration(milliseconds: 500), () {
+                          if (_stackTraceController.text == text) {
+                            _autoFindSymbolFiles();
+                          }
+                        });
+                      }
+                    },
                   ),
                 ),
 

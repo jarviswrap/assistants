@@ -9,15 +9,16 @@ class Addr2LineService {
   Addr2LineService._internal();
 
   String? _androidSdkPath;
-  List<String> _symbolFilePaths = [];
+  String? _symbolDirectoryPath;  // 改为符号目录路径
+  List<String> _symbolSoFilePaths = [];
   
   static const String _sdkPathKey = 'android_sdk_path';
-  static const String _symbolFilePathsKey = 'symbol_file_paths';
+  static const String _symbolDirectoryPathKey = 'symbol_directory_path';  // 新的key
 
   Future<void> initialize() async {
     final prefs = await SharedPreferences.getInstance();
     _androidSdkPath = prefs.getString(_sdkPathKey);
-    _symbolFilePaths = prefs.getStringList(_symbolFilePathsKey) ?? [];
+    _symbolDirectoryPath = prefs.getString(_symbolDirectoryPathKey);
   }
 
   Future<void> dispose() async {
@@ -31,37 +32,121 @@ class Addr2LineService {
     await prefs.setString(_sdkPathKey, path);
   }
 
-  /// 添加符号文件路径
-  Future<void> addSymbolFilePath(String path) async {
-    if (!_symbolFilePaths.contains(path)) {
-      _symbolFilePaths.add(path);
-      await _saveSymbolFilePaths();
-    }
-  }
-
-  /// 移除符号文件路径
-  Future<void> removeSymbolFilePath(String path) async {
-    _symbolFilePaths.remove(path);
-    await _saveSymbolFilePaths();
-  }
-
-  /// 清空所有符号文件路径
-  Future<void> clearSymbolFilePaths() async {
-    _symbolFilePaths.clear();
-    await _saveSymbolFilePaths();
-  }
-
-  /// 保存符号文件路径列表
-  Future<void> _saveSymbolFilePaths() async {
+  /// 设置符号目录路径
+  Future<void> setSymbolDirectoryPath(String path) async {
+    _symbolDirectoryPath = path;
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setStringList(_symbolFilePathsKey, _symbolFilePaths);
+    await prefs.setString(_symbolDirectoryPathKey, path);
   }
 
-  /// 获取当前配置的SDK路径
+  /// 从崩溃堆栈中解析出需要的.so文件名
+  List<String> _extractSoNamesFromStack(String stackTrace) {
+    final soNames = <String>{};
+    final lines = stackTrace.split('\n');
+    
+    // 正则表达式匹配堆栈帧中的.so文件
+    final frameRegex = RegExp(r'#\d+\s+pc\s+[0-9a-fA-F]+\s+(.+\.so)');
+    final libRegex = RegExp(r'(/system/lib|/vendor/lib|/data/app).*/([^/]+\.so)');
+    
+    for (final line in lines) {
+      final frameMatch = frameRegex.firstMatch(line.trim());
+      if (frameMatch != null) {
+        final libPath = frameMatch.group(1) ?? '';
+        final libMatch = libRegex.firstMatch(libPath);
+        if (libMatch != null) {
+          soNames.add(libMatch.group(2)!);
+        } else if (libPath.endsWith('.so')) {
+          // 直接提取文件名
+          final fileName = libPath.split('/').last;
+          if (fileName.endsWith('.so')) {
+            soNames.add(fileName);
+          }
+        }
+      }
+    }
+    
+    return soNames.toList();
+  }
+
+  /// 在符号目录中查找指定的.so文件
+  Future<List<String>> _findSoFilesInDirectory(List<String> soNames) async {
+    if (_symbolDirectoryPath == null || soNames.isEmpty) return [];
+    
+    final foundFilesMap = <String, List<File>>{}; // 按文件名分组
+    final directory = Directory(_symbolDirectoryPath!);
+    
+    if (!directory.existsSync()) return [];
+    
+    try {
+      await for (final entity in directory.list(recursive: true)) {
+        if (entity is File && entity.path.endsWith('.so')) {
+          final fileName = entity.path.split('/').last;
+          if (soNames.contains(fileName)) {
+            foundFilesMap.putIfAbsent(fileName, () => []).add(entity);
+          }
+        }
+      }
+    } catch (e) {
+      print('扫描符号目录时出错: $e');
+    }
+    
+    final selectedFiles = <String>[];
+    
+    // 对每个文件名的文件列表进行排序，选择最优的文件
+    for (final entry in foundFilesMap.entries) {
+      final files = entry.value;
+      
+      if (files.length == 1) {
+        selectedFiles.add(files.first.path);
+      } else {
+        // 多个同名文件，按修改时间和文件大小排序
+        files.sort((a, b) {
+          final aStat = a.statSync();
+          final bStat = b.statSync();
+          
+          // 首先按修改时间排序（最新的在前）
+          final timeComparison = bStat.modified.compareTo(aStat.modified);
+          if (timeComparison != 0) {
+            return timeComparison;
+          }
+          
+          // 修改时间相同时，按文件大小排序（最大的在前）
+          return bStat.size.compareTo(aStat.size);
+        });
+        
+        // 选择排序后的第一个文件（修改时间最新且文件最大的）
+        selectedFiles.add(files.first.path);
+        
+        print('发现多个同名符号文件 ${entry.key}，选择: ${files.first.path}');
+      }
+    }
+    
+    return selectedFiles;
+  }
+
+  /// 自动查找并更新符号文件（基于堆栈内容）
+  Future<List<String>> autoFindSymbolFiles(String stackTrace) async {
+    // 第一步：从崩溃堆栈中解析出.so文件名
+    final soNames = _extractSoNamesFromStack(stackTrace);
+    print('从堆栈中解析出的.so文件: $soNames');
+    
+    // 第二步：在符号目录中查找这些.so文件
+    final foundFiles = await _findSoFilesInDirectory(soNames);
+    print('在符号目录中找到的文件: $foundFiles');
+    
+    // 更新符号文件列表
+    _symbolSoFilePaths = foundFiles;
+    
+    return foundFiles;
+  }
+
   String? get androidSdkPath => _androidSdkPath;
 
   /// 获取当前配置的符号文件路径列表
-  List<String> get symbolFilePaths => List.unmodifiable(_symbolFilePaths);
+  List<String> get symbolSoFiles => List.unmodifiable(_symbolSoFilePaths);
+
+/// 获取当前配置的符号目录路径
+  String? get symbolDirectoryPath => _symbolDirectoryPath;
 
   /// 检测地址是32位还是64位
   bool _is64BitAddress(String address) {
@@ -116,7 +201,7 @@ class Addr2LineService {
 
   /// 符号化单个地址
   Future<String?> symbolizeAddress(String address) async {
-    if (_symbolFilePaths.isEmpty) {
+    if (_symbolSoFilePaths.isEmpty) {
       throw Exception('符号文件路径未设置');
     }
 
@@ -128,7 +213,7 @@ class Addr2LineService {
     }
 
     // 尝试每个符号文件，直到找到有效的符号化结果
-    for (final symbolFilePath in _symbolFilePaths) {
+    for (final symbolFilePath in _symbolSoFilePaths) {
       if (!File(symbolFilePath).existsSync()) {
         continue;
       }
@@ -209,18 +294,18 @@ class Addr2LineService {
 
   /// 验证配置是否有效
   Future<bool> validateConfiguration() async {
-    if (_androidSdkPath == null || _symbolFilePaths.isEmpty) {
+    if (_androidSdkPath == null || _symbolDirectoryPath == null) {
       return false;
     }
 
     // 检查SDK路径
-    if (!Directory(_androidSdkPath!).existsSync()) {
+    if (!Directory(_androidSdkPath!).existsSync() || !Directory(_symbolDirectoryPath!).existsSync()) {
       return false;
     }
 
     // 检查至少有一个有效的符号文件
     bool hasValidSymbolFile = false;
-    for (final path in _symbolFilePaths) {
+    for (final path in _symbolSoFilePaths) {
       if (File(path).existsSync()) {
         hasValidSymbolFile = true;
         break;
@@ -236,6 +321,16 @@ class Addr2LineService {
     final has64BitTool = _findAddr2LineTool(true) != null;
     
     return has32BitTool || has64BitTool;
+  }
+
+  /// 删除指定的符号文件
+  void removeSymbolFile(String filePath) {
+    _symbolSoFilePaths.remove(filePath);
+  }
+  
+  /// 清空所有符号文件
+  void clearSymbolFiles() {
+    _symbolSoFilePaths.clear();
   }
 }
 
@@ -258,3 +353,5 @@ class SymbolizedFrame {
   bool get isSymbolized => symbolizedInfo != null;
   bool get hasError => error != null;
 }
+
+  
