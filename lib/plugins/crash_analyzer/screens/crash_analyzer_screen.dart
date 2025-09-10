@@ -39,6 +39,272 @@ class _CrashAnalyzerScreenState extends State<CrashAnalyzerScreen> {
   void initState() {
     super.initState();
     _loadConfiguration();
+    
+    // 设置权限错误回调
+    Addr2LineService.instance.onPermissionError = _handlePermissionError;
+  }
+  
+  /// 处理权限错误
+  void _handlePermissionError(String message) {
+    if (mounted) {
+      // 检查是否是SDK路径权限错误
+      if (message.contains('SDK')) {
+        final currentSdkPath = Addr2LineService.instance.androidSdkPath;
+        
+        if (currentSdkPath != null && currentSdkPath.isNotEmpty) {
+          // 重新授权SDK目录
+          _reauthorizeSdkDirectory(currentSdkPath, message);
+        } else {
+          // 如果没有SDK路径配置，显示错误提示并引导选择
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.warning, color: Colors.orange),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text(message)),
+                ],
+              ),
+              backgroundColor: Colors.orange.shade100,
+              duration: const Duration(seconds: 4),
+              action: SnackBarAction(
+                label: '选择SDK路径',
+                onPressed: _selectSdkPath,
+              ),
+            ),
+          );
+        }
+      } else {
+        // 原有的符号目录权限错误处理逻辑
+        final currentSymbolDir = Addr2LineService.instance.symbolDirectoryPath;
+        
+        if (currentSymbolDir != null && currentSymbolDir.isNotEmpty) {
+          // 直接使用FilePicker重新授权当前目录
+          _reauthorizeCurrentDirectory(currentSymbolDir);
+        } else {
+          // 如果没有符号目录配置，显示错误提示并引导选择
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.warning, color: Colors.orange),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text(message)),
+                ],
+              ),
+              backgroundColor: Colors.orange.shade100,
+              duration: const Duration(seconds: 4),
+              action: SnackBarAction(
+                label: '选择目录',
+                onPressed: _selectSymbolDirectory,
+              ),
+            ),
+          );
+        }
+      }
+    }
+  }
+
+  /// 重新授权SDK目录
+  Future<void> _reauthorizeSdkDirectory(String currentSdkPath, String message) async {
+    try {
+      // 显示正在重新授权的提示
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Row(
+              children: [
+                SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+                SizedBox(width: 8),
+                Text('检测到SDK目录未授权，正在重新授权目录访问权限...'),
+              ],
+            ),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+      
+      // 使用FilePicker打开当前SDK目录，让用户重新授权
+      final String? selectedDirectory = await FilePicker.platform.getDirectoryPath(
+        dialogTitle: '请重新选择Android SDK路径以获取访问权限',
+        initialDirectory: currentSdkPath,
+      );
+      
+      if (selectedDirectory != null) {
+        // 更新SDK路径
+        await Addr2LineService.instance.setAndroidSdkPath(selectedDirectory);
+        setState(() {
+          _sdkPathController.text = selectedDirectory;
+        });
+        
+        if (mounted) {
+          // 检查是否是相同目录
+          final isSameDirectory = selectedDirectory == currentSdkPath;
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  Icon(
+                    isSameDirectory ? Icons.check_circle : Icons.info,
+                    color: isSameDirectory ? Colors.green : Colors.blue,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      isSameDirectory 
+                        ? 'SDK目录访问权限已重新授权'
+                        : 'SDK路径已更新: ${selectedDirectory.split('/').last}',
+                    ),
+                  ),
+                ],
+              ),
+              backgroundColor: isSameDirectory 
+                ? Colors.green.shade100 
+                : Colors.blue.shade100,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+      } else {
+        // 用户取消了选择，显示原始错误信息
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.warning, color: Colors.orange),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text(message)),
+                ],
+              ),
+              backgroundColor: Colors.orange.shade100,
+              duration: const Duration(seconds: 4),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      print('重新授权SDK目录时出错: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error, color: Colors.red),
+                const SizedBox(width: 8),
+                Expanded(child: Text('重新授权失败: $e')),
+              ],
+            ),
+            backgroundColor: Colors.red.shade100,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    }
+  }
+
+  /// 重新授权当前目录
+  Future<void> _reauthorizeCurrentDirectory(String currentDir) async {
+    try {
+      // 显示正在重新授权的提示
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Row(
+              children: [
+                SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+                SizedBox(width: 8),
+                Text('检测到当前符号目录未授权，正在重新授权目录访问权限...'),
+              ],
+            ),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+      
+      // 使用FilePicker打开当前目录，让用户重新授权
+      final String? selectedDirectory = await FilePicker.platform.getDirectoryPath(
+        dialogTitle: '请重新选择符号目录以获取访问权限',
+        initialDirectory: currentDir,
+      );
+      
+      if (selectedDirectory != null) {
+        // 更新符号目录路径
+        await Addr2LineService.instance.setSymbolDirectoryPath(selectedDirectory);
+        setState(() {
+          _symbolDirectoryController.text = selectedDirectory;
+        });
+        
+        if (mounted) {
+          // 检查是否是相同目录
+          final isSameDirectory = selectedDirectory == currentDir;
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.check_circle, color: Colors.green),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      isSameDirectory 
+                        ? '目录权限已重新授权' 
+                        : '已选择新的符号目录',
+                    ),
+                  ),
+                ],
+              ),
+              backgroundColor: Colors.green.shade100,
+              duration: const Duration(seconds: 2),
+            ),
+          );
+          
+          // 自动重新尝试查找符号文件
+          _autoFindSymbolFiles();
+        }
+      } else {
+        // 用户取消了选择
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Row(
+                children: [
+                  Icon(Icons.info, color: Colors.blue),
+                  SizedBox(width: 8),
+                  Text('已取消目录选择'),
+                ],
+              ),
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error, color: Colors.red),
+                const SizedBox(width: 8),
+                Expanded(child: Text('重新授权失败: ${e.toString()}')),
+              ],
+            ),
+            backgroundColor: Colors.red.shade100,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _loadConfiguration() async {
@@ -102,21 +368,57 @@ class _CrashAnalyzerScreenState extends State<CrashAnalyzerScreen> {
     
     try {
       final foundFiles = await Addr2LineService.instance.autoFindSymbolFiles(_stackTraceController.text);
+      
       setState(() {
         _foundSoFiles = foundFiles;
         _symbolFilePaths = foundFiles;
       });
       
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('自动找到 ${foundFiles.length} 个符号文件'),
-            duration: const Duration(seconds: 2),
-          ),
-        );
+        if (foundFiles.isNotEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('自动找到 ${foundFiles.length} 个符号文件'),
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Row(
+                children: [
+                  Icon(Icons.info, color: Colors.blue),
+                  SizedBox(width: 8),
+                  Expanded(child: Text('未找到匹配的符号文件，请检查符号目录设置')),
+                ],
+              ),
+              backgroundColor: Colors.blue.shade100,
+              duration: const Duration(seconds: 3),
+              action: SnackBarAction(
+                label: '选择目录',
+                onPressed: _selectSymbolDirectory,
+              ),
+            ),
+          );
+        }
       }
     } catch (e) {
       print('自动查找符号文件时出错: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error, color: Colors.red),
+                const SizedBox(width: 8),
+                Expanded(child: Text('查找符号文件失败: ${e.toString()}')),
+              ],
+            ),
+            backgroundColor: Colors.red.shade100,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
     }
   }
 
@@ -127,10 +429,10 @@ class _CrashAnalyzerScreenState extends State<CrashAnalyzerScreen> {
       });
       return;
     }
-
+    print(" 分析堆栈 _analyzeStack");
     // 先自动查找符号文件
     await _autoFindSymbolFiles();
-
+    print(" 分析堆栈 _analyzeStack 1" );
     setState(() {
       _isAnalyzing = true;
       _errorMessage = null;
@@ -139,9 +441,10 @@ class _CrashAnalyzerScreenState extends State<CrashAnalyzerScreen> {
 
     try {
       final service = Addr2LineService.instance;
-      
+      print(" 分析堆栈 _analyzeStack 2");
       // 验证配置
       final isValid = await service.validateConfiguration();
+      print(" 分析堆栈 _analyzeStack 3");
       if (!isValid) {
         throw Exception('配置无效：请检查Android SDK路径和符号目录路径');
       }
@@ -283,6 +586,29 @@ class _CrashAnalyzerScreenState extends State<CrashAnalyzerScreen> {
                               _symbolFilePaths.remove(fullPath);
                             });
                           },
+                          onItemTap: (item) {
+                            // 获取符号目录路径
+                            final symbolDir = _symbolDirectoryController.text;
+                            String fullPath = item;
+                            
+                            // 如果显示的是相对路径，需要还原为完整路径
+                            if (symbolDir.isNotEmpty && !item.startsWith('/')) {
+                              fullPath = '$symbolDir/$item';
+                            }
+                            
+                            // 复制完整路径到粘贴板
+                            Clipboard.setData(ClipboardData(text: fullPath));
+                            
+                            // 显示复制成功提示
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text('已复制路径: $fullPath'),
+                                  duration: const Duration(seconds: 2),
+                                ),
+                              );
+                            }
+                          },
                         ),
                       ),
                     ],
@@ -315,9 +641,16 @@ class _CrashAnalyzerScreenState extends State<CrashAnalyzerScreen> {
                   ),
                   content: TextField(
                     controller: _stackTraceController,
-                    decoration: const InputDecoration(
+                    style: const TextStyle(
+                      fontSize: 12,
+                    ),
+                    decoration: InputDecoration(
                       hintText: '粘贴Android native crash堆栈...',
-                      border: OutlineInputBorder(),
+                      hintStyle: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.6),
+                        fontSize: 12,
+                      ),
+                      border: const OutlineInputBorder(),
                     ),
                     maxLines: null,
                     expands: true,
@@ -466,6 +799,7 @@ class _CrashAnalyzerScreenState extends State<CrashAnalyzerScreen> {
 
   @override
   void dispose() {
+    Addr2LineService.instance.onPermissionError = null;
     _stackTraceController.dispose();
     _sdkPathController.dispose();
     super.dispose();
@@ -549,11 +883,16 @@ Widget _buildListView({
   Function(String)? onRemoveItem,
   Function(String)? onItemTap,
 }) {
+  // 检查是否有标题内容
+  final bool hasAnyTitleContent = (title?.isNotEmpty == true) || 
+                                 (primaryAction != null) || 
+                                 (secondAction != null);
+  
   return Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
       _buildListTitle(title: title, primaryAction: primaryAction, secondAction: secondAction),
-      const SizedBox(height: 4),
+      if (hasAnyTitleContent) const SizedBox(height: 4),  // 只有当有标题内容时才显示间距
       // 文件列表显示区域
       Container(
         constraints: const BoxConstraints(maxHeight: 120),
